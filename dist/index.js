@@ -5255,7 +5255,7 @@ function findGodotExecutablePath(basePath) {
         const fullPath = external_path_.join(basePath, subPath);
         const stats = external_fs_.statSync(fullPath);
         // || path.basename === 'Godot' && process.platform === 'darwin';
-        const isLinux = stats.isFile() && (external_path_.extname(fullPath) === '.64' || external_path_.extname(fullPath) === '.x86_64');
+        const isLinux = stats.isFile() && fullPath.endsWith('.64') || fullPath.endsWith('.x86_64');
         const isMac = stats.isDirectory() && external_path_.extname(fullPath) === '.app' && process.platform === 'darwin';
         if (isLinux) {
             return fullPath;
