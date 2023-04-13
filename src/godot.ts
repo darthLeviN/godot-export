@@ -98,7 +98,11 @@ async function downloadExecutable(): Promise<void> {
 async function prepareExecutable(): Promise<void> {
   const zipFile = path.join(GODOT_WORKING_PATH, GODOT_ZIP);
   const zipTo = path.join(GODOT_WORKING_PATH, GODOT_EXECUTABLE);
-  await exec('7z', ['x', zipFile, `-o${zipTo}`, '-y']);
+  if (GODOT_DOWNLOAD_URL.endsWith('.tar.gz')) {
+    await exec('tar', ['-zxvf', zipFile, `--one-top-level=${zipTo}`]);
+  } else {
+    await exec('7z', ['x', zipFile, `-o${zipTo}`, '-y']);
+  }
   const executablePath = findGodotExecutablePath(zipTo);
   if (!executablePath) {
     throw new Error('Could not find Godot executable');

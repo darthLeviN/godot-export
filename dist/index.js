@@ -5135,7 +5135,12 @@ async function downloadExecutable() {
 async function prepareExecutable() {
     const zipFile = external_path_.join(GODOT_WORKING_PATH, GODOT_ZIP);
     const zipTo = external_path_.join(GODOT_WORKING_PATH, GODOT_EXECUTABLE);
-    await (0,exec.exec)('7z', ['x', zipFile, `-o${zipTo}`, '-y']);
+    if (GODOT_DOWNLOAD_URL.endsWith('.tar.gz')) {
+        await (0,exec.exec)('tar', ['-zxvf', zipFile, `--one-top-level=${zipTo}`]);
+    } else {
+        await (0,exec.exec)('7z', ['x', zipFile, `-o${zipTo}`, '-y']);
+    }
+    core.info("Extraction completed.");
     const executablePath = findGodotExecutablePath(zipTo);
     if (!executablePath) {
         throw new Error('Could not find Godot executable');
@@ -5250,9 +5255,11 @@ function configureWindowsExport() {
 }
 function findGodotExecutablePath(basePath) {
     const paths = external_fs_.readdirSync(basePath);
+    core.info('Exploring paths :' + paths.toString());
     const dirs = [];
     for (const subPath of paths) {
         const fullPath = external_path_.join(basePath, subPath);
+        core.info(`Checking path :${fullPath}`);
         const stats = external_fs_.statSync(fullPath);
         // || path.basename === 'Godot' && process.platform === 'darwin';
         const isLinux = stats.isFile() && fullPath.endsWith('.editor.64') || fullPath.endsWith('.editor.x86_64');
@@ -5265,12 +5272,17 @@ function findGodotExecutablePath(basePath) {
             // https://docs.godotengine.org/en/stable/tutorials/editor/command_line_tutorial.html
             return external_path_.join(fullPath, 'Contents/MacOS/Godot');
         }
-        else {
+        else if (stats.isDirectory()) {
             dirs.push(fullPath);
+        } else {
+            core.info(`Ignoring file : ${fullPath}`);
         }
     }
     for (const dir of dirs) {
-        return findGodotExecutablePath(dir);
+        let ret = findGodotExecutablePath(dir)
+        if (typeof ret !== 'undefined') {
+            return ret;
+        }
     }
     return undefined;
 }
