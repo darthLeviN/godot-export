@@ -5044,7 +5044,10 @@ var external_os_ = __nccwpck_require__(2037);
 const ARCHIVE_OUTPUT = core.getInput('archive_output') === 'true';
 const GENERATE_RELEASE_NOTES = core.getInput('generate_release_notes') === 'true';
 const GODOT_DOWNLOAD_URL = core.getInput('godot_executable_download_url');
-const GODOT_TEMPLATES_DOWNLOAD_URL = core.getInput('godot_export_templates_download_url');
+const GODOT_TEMPLATES_LINUX_DOWNLOAD_URL = core.getInput('godot_export_templates_linux_download_url');
+const GODOT_TEMPLATES_WINDOWS_DOWNLOAD_URL = core.getInput('godot_export_templates_windows_download_url');
+const GODOT_TEMPLATES_WEB_DOWNLOAD_URL = core.getInput('godot_export_templates_web_download_url');
+// const GODOT_TEMPLATES_DOWNLOAD_URL = core.getInput('godot_export_templates_download_url');
 const RELATIVE_EXPORT_PATH = core.getInput('relative_export_path');
 const RELATIVE_PROJECT_PATH = core.getInput('relative_project_path');
 const WINE_PATH = core.getInput('wine_path');
@@ -5054,11 +5057,11 @@ const GODOT_VERBOSE = core.getInput('verbose') === 'true';
 const ARCHIVE_ROOT_FOLDER = core.getInput('archive_root_folder') === 'true';
 const USE_GODOT_3 = core.getInput('use_godot_3') === 'true';
 const EXPORT_PACK_ONLY = core.getInput('export_as_pack') === 'true';
-const GODOT_WORKING_PATH = external_path_default().resolve(external_path_default().join(external_os_.homedir(), '/.local/share/godot'));
+const GODOT_WORKING_PATH = external_path_default().resolve(external_path_default().join(external_os_.homedir(), '/.local/share/lam_godot'));
 const GODOT_EXPORT_TEMPLATES_PATH = external_path_default().resolve(external_path_default().join(external_os_.homedir(), process.platform === 'darwin'
     ? 'Library/Application Support/Godot/export_templates'
-    : '/.local/share/godot/export_templates'));
-const GODOT_CONFIG_PATH = external_path_default().resolve(external_path_default().join(external_os_.homedir(), '/.config/godot'));
+    : '/.local/share/lam_godot/export_templates'));
+const GODOT_CONFIG_PATH = external_path_default().resolve(external_path_default().join(external_os_.homedir(), '/.config/lam_godot'));
 const GODOT_BUILD_PATH = external_path_default().join(GODOT_WORKING_PATH, 'builds');
 const GODOT_ARCHIVE_PATH = external_path_default().join(GODOT_WORKING_PATH, 'archives');
 const GODOT_PROJECT_PATH = external_path_default().resolve(external_path_default().join(RELATIVE_PROJECT_PATH));
@@ -5075,8 +5078,11 @@ const GODOT_PROJECT_FILE_PATH = external_path_default().join(GODOT_PROJECT_PATH,
 
 
 const GODOT_EXECUTABLE = 'godot_executable';
-const GODOT_ZIP = 'godot.zip';
-const GODOT_TEMPLATES_FILENAME = 'godot_templates.tpz';
+const GODOT_TAR = 'godot.tar.gz';
+const GODOT_TEMPLATES_LINUX_FILENAME = 'godot_templates_linux.tar.gz';
+const GODOT_TEMPLATES_WINDOWS_FILENAME = 'godot_templates_windows.tar.gz';
+const GODOT_TEMPLATES_WEB_FILENAME = 'godot_templates_web.tar.gz';
+// const GODOT_TEMPLATES_FILENAME = 'godot_templates.tpz';
 const EDITOR_SETTINGS_FILENAME = USE_GODOT_3 ? 'editor_settings-3.tres' : 'editor_settings-4.tres';
 let godotExecutablePath;
 async function exportBuilds() {
@@ -5123,18 +5129,26 @@ async function setupWorkingPath() {
     core.info(`Working path created ${GODOT_WORKING_PATH}`);
 }
 async function downloadTemplates() {
-    core.info(`Downloading Godot export templates from ${GODOT_TEMPLATES_DOWNLOAD_URL}`);
-    const file = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_FILENAME);
-    await (0,exec.exec)('wget', ['-nv', GODOT_TEMPLATES_DOWNLOAD_URL, '-O', file]);
+    core.info(`Downloading Godot export templates for linux from ${GODOT_TEMPLATES_LINUX_DOWNLOAD_URL}`);
+    const linfile = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_LINUX_FILENAME);
+    await (0,exec.exec)('wget', ['-nv', GODOT_TEMPLATES_LINUX_DOWNLOAD_URL, '-O', linfile]);
+
+    core.info(`Downloading Godot export templates for windows from ${GODOT_TEMPLATES_WINDOWS_DOWNLOAD_URL}`);
+    const winfile = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_WINDOWS_FILENAME);
+    await (0,exec.exec)('wget', ['-nv', GODOT_TEMPLATES_WINDOWS_DOWNLOAD_URL, '-O', winfile]);
+
+    core.info(`Downloading Godot export templates for web from ${GODOT_TEMPLATES_WEB_DOWNLOAD_URL}`);
+    const webfile = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_WEB_FILENAME);
+    await (0,exec.exec)('wget', ['-nv', GODOT_TEMPLATES_WEB_DOWNLOAD_URL, '-O', webfile]);
 }
 async function downloadExecutable() {
     core.info(`Downloading Godot executable from ${GODOT_DOWNLOAD_URL}`);
-    const file = external_path_.join(GODOT_WORKING_PATH, GODOT_ZIP);
+    const file = external_path_.join(GODOT_WORKING_PATH, GODOT_TAR);
     await (0,exec.exec)('wget', ['-nv', GODOT_DOWNLOAD_URL, '-O', file]);
 }
 async function prepareExecutable() {
-    const zipFile = external_path_.join(GODOT_WORKING_PATH, GODOT_ZIP);
-    const zipTo = external_path_.join(GODOT_WORKING_PATH, GODOT_EXECUTABLE);
+    const zipFile = external_path_.join(GODOT_WORKING_PATH, GODOT_TAR);
+    const zipTo = GODOT_WORKING_PATH//external_path_.join(GODOT_WORKING_PATH, GODOT_EXECUTABLE);
     if (GODOT_DOWNLOAD_URL.endsWith('.tar.gz')) {
         await (0,exec.exec)('tar', ['-zxvf', zipFile, `--one-top-level=${zipTo}`]);
     } else {
@@ -5163,14 +5177,43 @@ async function prepareTemplates3() {
     await (0,exec.exec)('mv', [tmpPath, external_path_.join(templatesPath, godotVersion)]);
 }
 async function prepareTemplates() {
-    const templateFile = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_FILENAME);
-    const templatesPath = external_path_.join(GODOT_WORKING_PATH, 'templates');
-    const godotVersion = await getGodotVersion();
+    const template_linux_file = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_LINUX_FILENAME);
+    const template_windows_file = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_WINDOWS_FILENAME);
+    const template_web_file = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_WEB_FILENAME);
+    // await (0,exec.exec)('tar', ['-zxvf', zipFile, `--one-top-level=${zipTo}`]);
+    // const templateFile = external_path_.join(GODOT_WORKING_PATH, GODOT_TEMPLATES_FILENAME);
+    // 'rsync', [-avz, --remove-source-files, linux_templates_path+'/', windows_templates_path+'/', web_templates_path+'/', godotVersionPat]
+    const linux_templates_path = external_path_.join(GODOT_WORKING_PATH, 'linux/x86_64/templates');
+    const windows_templates_path = external_path_.join(GODOT_WORKING_PATH, 'windows/x86_64/templates');
+    const web_templates_path = external_path_.join(GODOT_WORKING_PATH, 'web/templates');
+    let godotVersion = await getGodotVersion();
+    if (godotVersion.endsWith('custom_build')) {
+        core.info('Removing "custom_build" from version extension.');
+        godotVersion = godotVersion.substring(0,godotVersion.lastIndexOf('.'));
+    }
     const godotVersionPath = external_path_.join(GODOT_WORKING_PATH, godotVersion);
-    await (0,exec.exec)('unzip', [templateFile, '-d', GODOT_WORKING_PATH]);
+    const godot_templates_folder = external_path_.join(godotVersionPath, 'templates');
+    await (0,exec.exec)('tar', ['-zxvf', template_linux_file, `--one-top-level=${GODOT_WORKING_PATH}`]);
+    await (0,exec.exec)('tar', ['-zxvf', template_windows_file, `--one-top-level=${GODOT_WORKING_PATH}`]);
+    await (0,exec.exec)('tar', ['-zxvf', template_web_file, `--one-top-level=${GODOT_WORKING_PATH}`]);
+    // await (0,exec.exec)('unzip', [templateFile, '-d', GODOT_WORKING_PATH]);
     await io.mkdirP(GODOT_EXPORT_TEMPLATES_PATH);
-    await (0,exec.exec)('mv', [templatesPath, godotVersionPath]);
+    await io.mkdirP(godotVersionPath);
+    // await io.mkdirP(godot_templates_folder);
+    await (0,exec.exec)('mv', [linux_templates_path+'/godot.linuxbsd.template_release.x86_64', godotVersionPath+'/linux_release.x86_64']);
+    await (0,exec.exec)('mv', [linux_templates_path+'/godot.linuxbsd.template_debug.x86_64', godotVersionPath+'/linux_debug.x86_64']);
+    await (0,exec.exec)('mv', [windows_templates_path+'/godot.windows.template_release.x86_64.exe', godotVersionPath+'/windows_release_x86_64.exe']);
+    await (0,exec.exec)('mv', [windows_templates_path+'/godot.windows.template_debug.x86_64.exe', godotVersionPath+'/windows_debug_x86_64.exe']);
+    await (0,exec.exec)('mv', [web_templates_path+'/godot.web.template_release.wasm32.zip', godotVersionPath+'/web_release.zip']);
+    await (0,exec.exec)('mv', [web_templates_path+'/godot.web.template_debug.wasm32.zip', godotVersionPath+'/web_debug.zip']);
+    await (0,exec.exec)('mv', [web_templates_path+'/godot.web.template_release.wasm32.dlink.zip', godotVersionPath+'/web_dlink_release.zip']);
+    await (0,exec.exec)('mv', [web_templates_path+'/godot.web.template_debug.wasm32.dlink.zip', godotVersionPath+'/web_dlink_debug.zip']);
+    // await (0,exec.exec)('rsync', ['-avz', '--remove-source-files', linux_templates_path+'/', windows_templates_path+'/', web_templates_path+'/', godotVersionPath+'/']);
+    // await (0,exec.exec)('cp', ['-r', linux_templates_path, godot_templates_folder]);
+    // await (0,exec.exec)('cp', ['-r', windows_templates_path, godot_templates_folder]);
+    // await (0,exec.exec)('cp', ['-r', web_templates_path, godot_templates_folder]);
     await (0,exec.exec)('mv', [godotVersionPath, GODOT_EXPORT_TEMPLATES_PATH]);
+    await (0,exec.exec)('ls', [GODOT_EXPORT_TEMPLATES_PATH+'/'+godotVersion]);
 }
 async function getGodotVersion() {
     let version = '';

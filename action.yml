@@ -9,7 +9,13 @@ inputs:
   godot_executable_download_url:
     description: The download url of the Linux Headless Godot executable.
     required: true
-  godot_export_templates_download_url:
+  godot_export_templates_linux_download_url:
+    description: The url of the export templates corresponding to the Godot executable version.
+    required: true
+  godot_export_templates_windows_download_url:
+    description: The url of the export templates corresponding to the Godot executable version.
+    required: true
+  godot_export_templates_web_download_url:
     description: The url of the export templates corresponding to the Godot executable version.
     required: true
   relative_project_path:
